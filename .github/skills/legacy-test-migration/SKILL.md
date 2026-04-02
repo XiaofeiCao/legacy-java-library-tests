@@ -81,7 +81,7 @@ Check which `@Test` methods are **not** `@Ignore`. For each active test method, 
 
 Then **convert to TestProxy format** using the converter script:
 ```bash
-python3 tools/convert_session_records.py <input_dir> <output_dir>
+python3 .github/skills/legacy-test-migration/scripts/convert_session_records.py <input_dir> <output_dir>
 ```
 
 The converter transforms old format → new TestProxy format:
