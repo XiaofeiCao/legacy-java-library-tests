@@ -75,14 +75,35 @@ These classes come from `azure-mgmt-resources/src/test/` in the source repo and 
 11. `TestResourceProviderRegistration.java`
 12. `TestUtilities.java`
 
-### Step 5: Download session records
+### Step 5: Download and convert session records
 
-Check which `@Test` methods are **not** `@Ignore`. For each active test method, download its session record:
+Check which `@Test` methods are **not** `@Ignore`. For each active test method, download its session record from the source repo.
+
+Then **convert to TestProxy format** using the converter script:
+```bash
+python3 tools/convert_session_records.py <input_dir> <output_dir>
+```
+
+The converter transforms old format → new TestProxy format:
+
+| Old Format | New TestProxy Format |
+|---|---|
+| `networkCallRecords` (array) | `Entries` (array) |
+| `.Method` | `.RequestMethod` |
+| `.Uri` | `.RequestUri` |
+| `.Headers` | `.RequestHeaders` |
+| (not separate) | `.RequestBody` (null) |
+| `.Response.StatusCode` (string) | `.StatusCode` (int) |
+| `.Response.Body` | `.ResponseBody` |
+| `.Response.*` (other keys) | `.ResponseHeaders` |
+| `variables` (positional array) | `Variables` (keyed dict `{"0":"v1",...}`) |
+
+Place converted files in:
 ```
 azure-mgmt-{service}/src/test/resources/session-records/{methodName}.json
 ```
 
-Session records are HTTP playback recordings (~60KB each). Only non-`@Ignore` tests have them.
+Only non-`@Ignore` tests have session records.
 
 ### Step 6: Verify build
 
