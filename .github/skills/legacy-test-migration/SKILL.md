@@ -117,7 +117,7 @@ Only non-`@Ignore` tests have session records.
 **TestProxy placement:**
 - `session-records/` — original legacy format for the legacy `InterceptorManager`
 - `session-records-testproxy/` — converted TestProxy format with `ClassName.methodName.json` naming
-- When test code is migrated to use `TestProxyTestBase`, the test proxy will use files from `session-records-testproxy/`
+- **Important:** TestProxy hardcodes the path `src/test/resources/session-records/` (not configurable). When test code is migrated to `TestProxyTestBase`, rename folders: `session-records/` → `session-records-legacy/`, then `session-records-testproxy/` → `session-records/`
 - The test proxy runs locally with `--storage-location <repoRoot>` and does not require `assets.json` for this repo
 
 ### Step 6: Verify build
