@@ -1,5 +1,6 @@
 ---
-applyTo: "azure-mgmt-*/**"
+name: legacy-test-migration
+description: Migrate tests from Azure/azure-libraries-for-java legacy SDK modules into this repository. Use when adding a new azure-mgmt-* module's tests.
 ---
 
 # Legacy Azure Java SDK Test Migration Skill
