@@ -36,6 +36,23 @@ Delete the entire `src/test/java/com/microsoft/azure/management/resources/core/`
 11. `TestResourceProviderRegistration.java`
 12. `TestUtilities.java`
 
+## Test Recordings Swap
+
+> **Prerequisite:** The `legacy-test-migration` skill must have already been run for the module, which converts legacy session records to TestProxy format and places them in `session-records-testproxy/` with `ClassName.methodName.json` naming.
+
+TestProxy **hardcodes** the path `src/test/resources/session-records/` — it is not configurable. During the upgrade, rename directories:
+
+```bash
+cd <module>/src/test/resources
+mv session-records session-records-legacy
+mv session-records-testproxy session-records
+```
+
+1. `session-records/` → `session-records-legacy/` (archive original legacy-format records)
+2. `session-records-testproxy/` → `session-records/` (activate pre-converted TestProxy records)
+
 ## When to Apply
 
-Apply this step when migrating test code from `com.microsoft.azure.management.resources.core.TestBase` to `com.azure.core.test.TestProxyTestBase`. The test classes must also be updated to extend `TestProxyTestBase` instead of `TestBase`.
+Apply these steps when migrating test code from `com.microsoft.azure.management.resources.core.TestBase` to `com.azure.core.test.TestProxyTestBase`:
+- Remove the inlined classes and add the `azure-resourcemanager-test` dependency
+- Swap the test recordings if the module has both `session-records/` and `session-records-testproxy/` directories
