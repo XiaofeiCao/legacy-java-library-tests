@@ -16,7 +16,7 @@ This repository hosts tests copied from **Azure/azure-libraries-for-java** (the 
 
 ## Migration Process
 
-Follow these 7 steps to add a new legacy module:
+Follow these 8 steps to add a new legacy module:
 
 ### Step 1: Discover test files
 
@@ -129,7 +129,36 @@ mvn compile test-compile
 
 Fix any compilation errors (usually missing dependencies in pom.xml).
 
-### Step 7: Commit and push
+### Step 7: Verify tests
+
+Run the tests in playback mode to confirm session records load correctly:
+
+```bash
+cd azure-mgmt-{service}
+mvn test
+```
+
+All non-`@Ignore` tests should pass using the session records for playback.
+
+**SecurityException workaround:** If tests fail with a `java.lang.SecurityException` (e.g., "sealing violation" or "package access" errors), it means the test package collides with a sealed package in one of the dependency JARs. Fix this by renaming the test package:
+
+1. Choose a new package name that avoids the conflict, e.g., `com.microsoft.azure.management.{service}.tests`
+2. Create the new directory structure:
+   ```
+   azure-mgmt-{service}/src/test/java/com/microsoft/azure/management/{service}/tests/
+   ```
+3. Move all test `.java` files into the new directory
+4. Update the `package` declaration in each moved file from:
+   ```java
+   package com.microsoft.azure.management.{service};
+   ```
+   to:
+   ```java
+   package com.microsoft.azure.management.{service}.tests;
+   ```
+5. Re-run `mvn test` to confirm the issue is resolved
+
+### Step 8: Commit and push
 
 ```bash
 git add azure-mgmt-{service}/
@@ -147,6 +176,9 @@ The `com.microsoft.azure:azure-mgmt-resources:test-jar:1.41.4` artifact is **not
 
 ### Java version
 Source repo targets Java 7 (`<source>1.7</source>`). This repo uses Java 8 for broader compatibility.
+
+### SecurityException (sealed package)
+Some legacy modules have test classes whose package name collides with a sealed package inside a dependency JAR (e.g., `azure-mgmt-{service}`). At runtime this causes `java.lang.SecurityException`. The fix is to move the test classes into a sub-package such as `com.microsoft.azure.management.{service}.tests` — see Step 7 for details.
 
 ## Available Modules
 
