@@ -9,7 +9,7 @@ Upgrade all `com.microsoft.azure.*` to `com.azure.*` equivalents in one autonomo
 
 - [Rules and Workflow](./references/RULES.md) — success criteria, anti-excuse rules, workflow
 - [Migration Guidelines](./references/INSTRUCTION.md) — package mappings, code samples, validation
-- [Session Records](./references/SESSION_RECORDS.md) — TestProxy session record format conversion and renaming
+- [Test Recordings](./references/TEST_RECORDINGS.md) — swapping pre-converted test recordings for TestProxy
 - [Plan Template](./references/PLAN_TEMPLATE.md) · [Progress Template](./references/PROGRESS_TEMPLATE.md) · [Summary Template](./references/SUMMARY_TEMPLATE.md)
 
 ## Workflow
@@ -17,7 +17,7 @@ Upgrade all `com.microsoft.azure.*` to `com.azure.*` equivalents in one autonomo
 1. **Precheck** — Verify Maven/Gradle project, detect JDK/build tools, create `plan.md` from [Plan Template](./references/PLAN_TEMPLATE.md). If git available, create branch `java-upgrade/{RUN_ID}`.
 2. **Plan** — Inventory deps, consult [Migration Guidelines](./references/INSTRUCTION.md), populate `plan.md`
 3. **Execute** — Create `progress.md` from [Progress Template](./references/PROGRESS_TEMPLATE.md), migrate build config then source, build/test/fix, commit per step
-4. **Session Records** — If legacy tests have session records, convert and rename per [Session Records guide](./references/SESSION_RECORDS.md): rename `session-records/` → `session-records-legacy/`, `session-records-testproxy/` → `session-records/`
+4. **Test Recordings** — If module has pre-converted recordings, swap directories per [Test Recordings guide](./references/TEST_RECORDINGS.md): rename `session-records/` → `session-records-legacy/`, `session-records-testproxy/` → `session-records/`
 5. **Validate** — Create `summary.md` from [Summary Template](./references/SUMMARY_TEMPLATE.md), apply [validation checklist](./references/INSTRUCTION.md#validation)
 
 ## Constraints
