@@ -75,14 +75,21 @@ These classes come from `azure-mgmt-resources/src/test/` in the source repo and 
 11. `TestResourceProviderRegistration.java`
 12. `TestUtilities.java`
 
-### Step 5: Download and convert session records
+### Step 5: Download session records and create TestProxy copies
 
-Check which `@Test` methods are **not** `@Ignore`. For each active test method, download its session record from the source repo.
-
-Then **convert to TestProxy format** using the converter script:
-```bash
-python3 .github/skills/legacy-test-migration/scripts/convert_session_records.py <input_dir> <output_dir>
+Check which `@Test` methods are **not** `@Ignore`. For each active test method, download its session record from the source repo into:
 ```
+azure-mgmt-{service}/src/test/resources/session-records/{methodName}.json
+```
+
+**Keep the originals as-is.** Then create a converted copy in TestProxy format:
+```bash
+python3 .github/skills/legacy-test-migration/scripts/convert_session_records.py \
+  azure-mgmt-{service}/src/test/resources/session-records \
+  azure-mgmt-{service}/src/test/resources/session-records-testproxy
+```
+
+This preserves the original legacy format in `session-records/` and adds the migrated TestProxy format in `session-records-testproxy/`.
 
 The converter transforms old format → new TestProxy format:
 
