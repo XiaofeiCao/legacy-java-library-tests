@@ -1,3 +1,7 @@
+---
+applyTo: "azure-mgmt-*/**"
+---
+
 # Legacy Azure Java SDK Test Migration Skill
 
 ## Purpose
