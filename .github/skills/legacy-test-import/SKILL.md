@@ -59,7 +59,7 @@ Copy the 12 test infrastructure classes into:
 azure-mgmt-{service}/src/test/java/com/microsoft/azure/management/resources/core/
 ```
 
-These classes come from `azure-mgmt-resources/src/test/` in the source repo and are **not available on Maven Central** (the test-jar is unpublished). If another module in this repo already has them, copy from there.
+These classes come from `azure-mgmt-resources/src/test/` in the source repo and are **not available on Maven Central** (the test-jar is unpublished). **Always copy from an already-fixed module** in this repo (e.g., `azure-mgmt-storage`) to get the playback interceptor fixes automatically — do NOT copy from `azure-mgmt-keyvault` as it has unfixed test-infra classes.
 
 **Complete list of required classes:**
 1. `TestBase.java`
@@ -140,7 +140,7 @@ mvn test
 
 All non-`@Ignore` tests should pass using the session records for playback.
 
-**SecurityException workaround:** If tests fail with a `java.lang.SecurityException` (e.g., "sealing violation" or "package access" errors), it means the test package collides with a sealed package in one of the dependency JARs. Fix this by renaming the test package:
+**SecurityException workaround:** If tests fail with a `java.lang.SecurityException` (e.g., "sealing violation", "signer information does not match", or "package access" errors), it means the test package collides with a sealed package in one of the dependency JARs. Fix this by renaming the test package:
 
 1. Choose a new package name that avoids the conflict, e.g., `com.microsoft.azure.management.{service}.tests`
 2. Create the new directory structure:
@@ -155,8 +155,47 @@ All non-`@Ignore` tests should pass using the session records for playback.
    to:
    ```java
    package com.microsoft.azure.management.{service}.tests;
+
+   import com.microsoft.azure.management.{service}.*;
    ```
+   The wildcard import is needed so the test code can still reference all classes from the original service package.
 5. Re-run `mvn test` to confirm the issue is resolved
+
+**ConnectException workaround:** If tests fail with `java.net.ConnectException: Failed to connect to localhost/...:11080`, the playback interceptor infrastructure needs two fixes in the inlined test-infra classes:
+
+1. **`InterceptorManager.java`** — In the `playback()` method, the original code calls `chain.proceed(request)` which requires a real server on localhost:11080. Replace it to construct the Response directly:
+   - Add import: `import okhttp3.Protocol;`
+   - Replace:
+     ```java
+     Response originalResponse = chain.proceed(request);
+     originalResponse.body().close();
+
+     Response.Builder responseBuilder = originalResponse.newBuilder()
+             .code(recordStatusCode).message("-");
+     ```
+     With:
+     ```java
+     Response.Builder responseBuilder = new Response.Builder()
+             .request(request)
+             .protocol(Protocol.HTTP_1_1)
+             .code(recordStatusCode).message("-");
+     ```
+
+2. **`TestBase.java`** — In the `beforeTest()` method's playback branch, the interceptor is registered as a `networkInterceptor` which requires a TCP connection before it can run. Change it to an application interceptor and remove the other network interceptors that are unnecessary for playback:
+   - Replace:
+     ```java
+     .withNetworkInterceptor(new ResourceGroupTaggingInterceptor())
+     .withNetworkInterceptor(new LoggingInterceptor(LogLevel.BODY_AND_HEADERS))
+     .withNetworkInterceptor(interceptorManager.initInterceptor())
+     .withInterceptor(new ResourceManagerThrottlingInterceptor())
+     ```
+     With:
+     ```java
+     .withInterceptor(interceptorManager.initInterceptor())
+     .withInterceptor(new ResourceManagerThrottlingInterceptor())
+     ```
+
+These fixes should be applied to the test-infra classes in **every new module**. Copy from an already-fixed module (e.g., `azure-mgmt-storage`) to get both fixes automatically.
 
 ### Step 8: Commit and push
 
@@ -178,13 +217,17 @@ The `com.microsoft.azure:azure-mgmt-resources:test-jar:1.41.4` artifact is **not
 Source repo targets Java 7 (`<source>1.7</source>`). This repo uses Java 8 for broader compatibility.
 
 ### SecurityException (sealed package)
-Some legacy modules have test classes whose package name collides with a sealed package inside a dependency JAR (e.g., `azure-mgmt-{service}`). At runtime this causes `java.lang.SecurityException`. The fix is to move the test classes into a sub-package such as `com.microsoft.azure.management.{service}.tests` — see Step 7 for details.
+Some legacy modules have test classes whose package name collides with a sealed package inside a dependency JAR (e.g., `azure-mgmt-{service}`). At runtime this causes `java.lang.SecurityException`. The fix is to move the test classes into a sub-package such as `com.microsoft.azure.management.{service}.tests` and add `import com.microsoft.azure.management.{service}.*;` — see Step 7 for details.
+
+### ConnectException (playback interceptor)
+The original test infrastructure registers the playback interceptor as a `networkInterceptor` and calls `chain.proceed(request)` inside `playback()`. This requires a real HTTP server on `localhost:11080` which doesn't exist in this standalone setup. The fix is to use an application interceptor and construct the `Response` directly — see Step 7 for details. **Always copy test-infra classes from an already-fixed module** (e.g., `azure-mgmt-storage`) to get these fixes automatically.
 
 ## Available Modules
 
 Modules in `Azure/azure-libraries-for-java` (✅ = migrated):
 
 - ✅ `azure-mgmt-keyvault`
+- ✅ `azure-mgmt-storage`
 - ⬜ `azure-mgmt-appservice`
 - ⬜ `azure-mgmt-batch`
 - ⬜ `azure-mgmt-batchai`
@@ -208,5 +251,4 @@ Modules in `Azure/azure-libraries-for-java` (✅ = migrated):
 - ⬜ `azure-mgmt-search`
 - ⬜ `azure-mgmt-servicebus`
 - ⬜ `azure-mgmt-sql`
-- ⬜ `azure-mgmt-storage`
 - ⬜ `azure-mgmt-trafficmanager`
