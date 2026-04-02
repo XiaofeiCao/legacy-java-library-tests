@@ -1,6 +1,6 @@
 ---
-name: legacy-test-migration
-description: Migrate tests from Azure/azure-libraries-for-java legacy SDK modules into this repository. Use when adding a new azure-mgmt-* module's tests.
+name: legacy-test-import
+description: Import tests from Azure/azure-libraries-for-java legacy SDK modules into this repository. Use when adding a new azure-mgmt-* module's tests.
 ---
 
 # Legacy Azure Java SDK Test Migration Skill
@@ -84,7 +84,7 @@ azure-mgmt-{service}/src/test/resources/session-records/{methodName}.json
 
 **Keep the originals as-is.** Then create a converted copy in TestProxy format with class-prefixed naming:
 ```bash
-python3 .github/skills/legacy-test-migration/scripts/convert_session_records.py \
+python3 .github/skills/legacy-test-import/scripts/convert_session_records.py \
   azure-mgmt-{service}/src/test/resources/session-records \
   azure-mgmt-{service}/src/test/resources/session-records-testproxy \
   --test-dir azure-mgmt-{service}/src/test/java/com/microsoft/azure/management/{service}/

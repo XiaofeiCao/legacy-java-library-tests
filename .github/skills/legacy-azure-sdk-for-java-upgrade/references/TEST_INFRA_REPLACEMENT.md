@@ -38,7 +38,7 @@ This brings in `azure-core-test` (with `TestProxyTestBase`) and Azure Identity t
 
 ## Test Recordings Swap
 
-> **Prerequisite:** The `legacy-test-migration` skill must have already been run for the module, which converts legacy session records to TestProxy format and places them in `session-records-testproxy/` with `ClassName.methodName.json` naming.
+> **Prerequisite:** The `legacy-test-import` skill must have already been run for the module, which converts legacy session records to TestProxy format and places them in `session-records-testproxy/` with `ClassName.methodName.json` naming.
 
 TestProxy **hardcodes** the path `src/test/resources/session-records/` — it is not configurable. During the upgrade, rename directories:
 
