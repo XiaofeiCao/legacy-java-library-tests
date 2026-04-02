@@ -21,7 +21,7 @@ This brings in `azure-core-test` (with `TestProxyTestBase`) and Azure Identity t
 
 ## Classes to Remove
 
-Delete the entire `src/test/java/com/microsoft/azure/management/resources/core/` directory. It contains:
+**DELETE the entire `src/test/java/com/microsoft/azure/management/resources/core/` directory. Do NOT migrate these classes — they are fully replaced by `azure-resourcemanager-test`.** It contains:
 
 1. `TestBase.java`
 2. `InterceptorManager.java`
