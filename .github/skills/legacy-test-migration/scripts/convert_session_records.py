@@ -16,10 +16,18 @@ In the old format, Response is a flat dict mixing:
   - "StatusCode" (string) -> int
   - "Body" (string) -> ResponseBody
   - everything else -> ResponseHeaders
+
+TestProxy naming convention:
+  - Legacy: methodName.json (e.g., canCRUDVault.json)
+  - TestProxy: ClassName.methodName.json (e.g., VaultTests.canCRUDVault.json)
+  When --test-dir is provided, output files are renamed with the class prefix.
 """
 import json
 import sys
 import os
+import re
+import argparse
+
 
 def convert_record(old_record):
     """Convert a single networkCallRecord to a TestProxy Entry."""
@@ -47,6 +55,7 @@ def convert_record(old_record):
 
     return entry
 
+
 def convert_file(input_path, output_path):
     """Convert a full session record file."""
     with open(input_path, 'r') as f:
@@ -66,22 +75,88 @@ def convert_file(input_path, output_path):
     with open(output_path, 'w') as f:
         json.dump(new_data, f, indent=2)
     
-    print(f"  Converted: {os.path.basename(input_path)} ({len(entries)} entries, {len(variables)} variables)")
+    print(f"  Converted: {os.path.basename(input_path)} -> {os.path.basename(output_path)} ({len(entries)} entries, {len(variables)} variables)")
+
+
+def build_method_class_map(test_dir):
+    """Scan Java test files to build a mapping of method name -> class name.
+    
+    Looks for @Test-annotated methods (excluding @Ignore) and maps each
+    method name to its containing class, enabling ClassName.methodName.json
+    naming for TestProxy session records.
+    """
+    method_map = {}
+    class_pattern = re.compile(r'public\s+class\s+(\w+)')
+    test_annotation = re.compile(r'@Test\b')
+    ignore_annotation = re.compile(r'@Ignore\b')
+    method_pattern = re.compile(r'public\s+void\s+(\w+)\s*\(')
+
+    for root, _, files in os.walk(test_dir):
+        for fname in files:
+            if not fname.endswith('.java'):
+                continue
+            filepath = os.path.join(root, fname)
+            with open(filepath, 'r') as f:
+                lines = f.readlines()
+
+            current_class = None
+            for i, line in enumerate(lines):
+                class_match = class_pattern.search(line)
+                if class_match:
+                    current_class = class_match.group(1)
+
+                if test_annotation.search(line) and current_class:
+                    # Check if @Ignore appears on the same line or adjacent lines
+                    context = ''.join(lines[max(0, i-2):i+1])
+                    if ignore_annotation.search(context):
+                        continue
+                    # Find the method declaration in the next few lines
+                    for j in range(i, min(i + 5, len(lines))):
+                        method_match = method_pattern.search(lines[j])
+                        if method_match:
+                            method_name = method_match.group(1)
+                            method_map[method_name] = current_class
+                            break
+
+    return method_map
+
 
 def main():
-    if len(sys.argv) != 3:
-        print(f"Usage: {sys.argv[0]} <input_dir> <output_dir>")
-        sys.exit(1)
-    
-    input_dir = sys.argv[1]
-    output_dir = sys.argv[2]
-    
-    for filename in sorted(os.listdir(input_dir)):
-        if filename.endswith('.json'):
-            convert_file(
-                os.path.join(input_dir, filename),
-                os.path.join(output_dir, filename)
-            )
+    parser = argparse.ArgumentParser(
+        description='Convert legacy session records to TestProxy format.')
+    parser.add_argument('input_dir', help='Directory with legacy session record JSON files')
+    parser.add_argument('output_dir', help='Directory for converted TestProxy format files')
+    parser.add_argument('--test-dir',
+                        help='Java test source directory to scan for method->class mapping. '
+                             'When provided, output files are named ClassName.methodName.json '
+                             'instead of just methodName.json (TestProxy convention).')
+    args = parser.parse_args()
+
+    method_map = {}
+    if args.test_dir:
+        method_map = build_method_class_map(args.test_dir)
+        if method_map:
+            print(f"  Built method->class mapping ({len(method_map)} methods):")
+            for method, cls in sorted(method_map.items()):
+                print(f"    {method} -> {cls}")
+        else:
+            print("  Warning: no @Test methods found, using original file names")
+
+    for filename in sorted(os.listdir(args.input_dir)):
+        if not filename.endswith('.json'):
+            continue
+
+        method_name = filename[:-5]  # strip .json
+        if method_map and method_name in method_map:
+            out_filename = f"{method_map[method_name]}.{method_name}.json"
+        else:
+            out_filename = filename
+
+        convert_file(
+            os.path.join(args.input_dir, filename),
+            os.path.join(args.output_dir, out_filename)
+        )
+
 
 if __name__ == "__main__":
     main()

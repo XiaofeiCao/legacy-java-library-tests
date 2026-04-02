@@ -82,14 +82,20 @@ Check which `@Test` methods are **not** `@Ignore`. For each active test method, 
 azure-mgmt-{service}/src/test/resources/session-records/{methodName}.json
 ```
 
-**Keep the originals as-is.** Then create a converted copy in TestProxy format:
+**Keep the originals as-is.** Then create a converted copy in TestProxy format with class-prefixed naming:
 ```bash
 python3 .github/skills/legacy-test-migration/scripts/convert_session_records.py \
   azure-mgmt-{service}/src/test/resources/session-records \
-  azure-mgmt-{service}/src/test/resources/session-records-testproxy
+  azure-mgmt-{service}/src/test/resources/session-records-testproxy \
+  --test-dir azure-mgmt-{service}/src/test/java/com/microsoft/azure/management/{service}/
 ```
 
 This preserves the original legacy format in `session-records/` and adds the migrated TestProxy format in `session-records-testproxy/`.
+
+**Naming convention:**
+- Legacy format uses `methodName.json` (e.g., `canCRUDVault.json`)
+- TestProxy format uses `ClassName.methodName.json` (e.g., `VaultTests.canCRUDVault.json`)
+- The `--test-dir` flag scans Java test files to auto-build the method→class mapping
 
 The converter transforms old format → new TestProxy format:
 
@@ -104,13 +110,15 @@ The converter transforms old format → new TestProxy format:
 | `.Response.Body` | `.ResponseBody` |
 | `.Response.*` (other keys) | `.ResponseHeaders` |
 | `variables` (positional array) | `Variables` (keyed dict `{"0":"v1",...}`) |
-
-Place converted files in:
-```
-azure-mgmt-{service}/src/test/resources/session-records/{methodName}.json
-```
+| file: `methodName.json` | file: `ClassName.methodName.json` |
 
 Only non-`@Ignore` tests have session records.
+
+**TestProxy placement:**
+- `session-records/` — original legacy format for the legacy `InterceptorManager`
+- `session-records-testproxy/` — converted TestProxy format with `ClassName.methodName.json` naming
+- When test code is migrated to use `TestProxyTestBase`, the test proxy will use files from `session-records-testproxy/`
+- The test proxy runs locally with `--storage-location <repoRoot>` and does not require `assets.json` for this repo
 
 ### Step 6: Verify build
 
